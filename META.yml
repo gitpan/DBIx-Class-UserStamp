@@ -17,5 +17,6 @@ no_index:
     - t
 requires:
   DBIx::Class: 0
+  DBIx::Class::DynamicDefault: 0
 tests: t/*.t
-version: 0.10
+version: 0.11

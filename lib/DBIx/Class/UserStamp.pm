@@ -5,13 +5,9 @@ use base qw(DBIx::Class);
 use warnings;
 use strict;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
-__PACKAGE__->mk_classdata( 
-    '__column_userstamp_triggers' => {
-        on_update => [], on_create => []
-    }
-);
+__PACKAGE__->load_components( qw/DynamicDefault/ );
 
 =head1 NAME
 
@@ -64,63 +60,23 @@ This is effectively trigger emulation to ease user id field insertion
 =cut
 
 sub add_columns {
-    my $self = shift;
+    my ($self, @cols) = @_;
+    my @columns;
 
-    # Add everything else, get everything setup, and then process
-    $self->next::method(@_);
-   
-    my @update_columns = ();
-    my @create_columns = ();
+    while (my $col = shift @cols) {
+        my $info = ref $cols[0] ? shift @cols : {};
 
-    foreach my $column ( $self->columns ) {
-        my $info = $self->column_info($column);
-        if ( $info->{store_user_on_update} ) {
-            push @update_columns, $column;
+        if ( delete $info->{store_user_on_update} ) {
+            $info->{dynamic_default_on_update} = 'get_current_user_id';
         }
-        if ( $info->{store_user_on_create} ) {
-            push @create_columns, $column;
+        if ( delete $info->{store_user_on_create} ) {
+            $info->{dynamic_default_on_create} = 'get_current_user_id';
         }
-    }
-    if ( @update_columns or @create_columns ) {
-        my $triggers = {
-            on_update => [ @update_columns ],
-            on_create => [ @create_columns ],
-        };
-        $self->__column_userstamp_triggers($triggers);
-    }
-}
 
-sub insert {
-    my $self  = shift;
-    my $attrs = shift;
-
-    my $user_id = $self->get_current_user_id;
-
-    my @columns = @{ $self->__column_userstamp_triggers()->{on_create} };
-
-    foreach my $column ( @columns ) {
-        next if defined $self->get_column( $column );
-        my $accessor = $self->column_info($column)->{accessor} || $column;
-        $self->$accessor($user_id);
-    }
-    
-    return $self->next::method(@_);
-}
-
-sub update {
-    my $self = shift;
-
-    my $user_id = $self->get_current_user_id;
-    my %dirty = $self->get_dirty_columns();
-    my @columns = @{ $self->__column_userstamp_triggers()->{on_update} };
-
-    foreach my $column ( @columns ) {
-        next if exists $dirty{ $column };
-        my $accessor = $self->column_info($column)->{accessor} || $column;
-        $self->$accessor($user_id);
+        push @columns, $col => $info;
     }
 
-    return $self->next::method(@_);
+    return $self->next::method(@columns);
 }
 
 =head1 METHODS
@@ -137,9 +93,10 @@ sub get_current_user_id { shift->result_source->schema->current_user_id }
 
  Matt S. Trout     <mst@shadowcatsystems.co.uk>
 
-=head1 CONTRIBUTOR 
+=head1 CONTRIBUTORS
 
  John Goulah     <jgoulah@cpan.org>
+ Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT
 

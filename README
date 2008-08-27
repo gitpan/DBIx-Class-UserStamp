@@ -49,8 +49,9 @@ METHODS
 AUTHOR
      Matt S. Trout     <mst@shadowcatsystems.co.uk>
 
-CONTRIBUTOR
+CONTRIBUTORS
      John Goulah     <jgoulah@cpan.org>
+     Florian Ragwitz <rafl@debian.org>
 
 COPYRIGHT
     This program is free software; you can redistribute it and/or modify it

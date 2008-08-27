@@ -4,6 +4,7 @@ name 'DBIx-Class-UserStamp';
 all_from 'lib/DBIx/Class/UserStamp.pm';
 
 requires 'DBIx::Class';
+requires 'DBIx::Class::DynamicDefault';
 
 build_requires 'Class::Accessor::Grouped';
 
